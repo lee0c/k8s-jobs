@@ -1,6 +1,6 @@
 from golang as build
 
-RUN apk update && apk add ca-certificates && rm -rf /var/cache/apk/*
+RUN apk --update add ca-certificates
 
 COPY go.mod .
 COPY go.sum .
@@ -12,7 +12,7 @@ COPY . .
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build
 
 FROM scratch as binary
-COPY --from=builder ./mycert.crt /usr/local/share/ca-certificates/mycert.crt
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 COPY --from=builder manager /manager
 
 ENTRYPOINT["/manager"]
