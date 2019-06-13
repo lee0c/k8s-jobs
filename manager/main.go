@@ -1,7 +1,9 @@
 package main
 
 import (
+	"os"
 
+	"k8s.io/client-go/kubernetes"
 )
 
 const (
