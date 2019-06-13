@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "queue-jobs.fullname" . }}
+  labels:
+    app.kubernetes.io/name: {{ include "queue-jobs.name" . }}
+    helm.sh/chart: {{ include "queue-jobs.chart" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "queue-jobs.name" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+      labels:
+        app.kubernetes.io/name: {{ include "queue-jobs.name" . }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
+    spec:
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          envFrom:
+          - configMapRef:
+              name: {{ include "queue-jobs.fullname" . }}-configmap
+          volumeMounts:
+          - name: {{ include "queue-jobs.fullname" . }}-volume
+            mountPath: {{ .Values.volume.mountPath }}
+      volumes:
+      - name: {{ include "queue-jobs.fullname" . }}-volume
+        configMap:
+          name: {{ include "queue-jobs.fullname" . }}-consumerconfig

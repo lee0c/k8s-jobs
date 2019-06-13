@@ -1,0 +1,33 @@
+# Default values for queue-jobs.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+replicaCount: 1
+
+image:
+  repository: "lee0c/job-manager"
+  tag: latest
+  pullPolicy: Always
+
+nameOverride: ""
+fullnameOverride: ""
+
+servicebus:
+  queueName: queue
+  connectionString: ""
+
+volume:
+  mountPath: "/etc/config"
+  podSpecFilename: pod-config.yaml
+
+consumerPodSpec:
+  containers:
+  - name: sbq-consumer
+    image: lee0c/sbq-consumer
+    resources:
+      requests:
+        cpu: "250m"
+  tolerations:
+  - key: virtual-kubelet.io/provider
+    operator: Exists
+    effect: NoSchedule

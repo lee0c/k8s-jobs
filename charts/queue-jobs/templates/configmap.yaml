@@ -1,0 +1,36 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "queue-jobs.fullname" . }}-configmap
+  labels:
+    app.kubernetes.io/name: {{ include "queue-jobs.name" . }}
+    helm.sh/chart: {{ include "queue-jobs.chart" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+data:
+  SERVICEBUS_QUEUE_NAME: {{ .Values.servicebus.queueName }}
+  SERVICEBUS_CONNECTION_STRING: {{ .Values.servicebus.connectionString | quote }}
+  POD_NAMESPACE: {{ .Release.Namespace }}
+  PODSPEC_FILENAME: "{{ .Values.volume.mountPath }}/{{ .Values.volume.podSpecFilename }}"
+  
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "queue-jobs.fullname" . }}-consumerconfig
+  labels:
+    app.kubernetes.io/name: {{ include "queue-jobs.name" . }}
+    helm.sh/chart: {{ include "queue-jobs.chart" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+data:
+  {{ .Values.volume.podSpecFilename }}: |
+{{ range $key, $val := .Values.consumerPodSpec -}}
+{{ $key | indent 4 }}:
+{{ toYaml $val | indent 4 }}
+{{- if eq $key "containers" -}}
+{{ "envFrom:" | indent 2 }}
+      - configMapRef:
+          name: {{ include "queue-jobs.fullname" $ }}-configmap
+{{ end -}}
+{{- end -}}
