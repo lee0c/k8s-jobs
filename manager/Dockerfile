@@ -1,6 +1,8 @@
-from golang as build
+from golang:1.12-alpine as builder
 
-RUN apk --update add ca-certificates
+WORKDIR "/manager"
+
+RUN apk --update add git ca-certificates
 
 COPY go.mod .
 COPY go.sum .
@@ -15,4 +17,4 @@ FROM scratch as binary
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 COPY --from=builder manager /manager
 
-ENTRYPOINT["/manager"]
+ENTRYPOINT ["/manager"]

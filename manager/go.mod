@@ -6,6 +6,7 @@ replace k8s.io/apimachinery => k8s.io/apimachinery v0.0.0-20190404173353-6a84e37
 
 require (
 	github.com/Azure/azure-service-bus-go v0.8.0
+	github.com/ghodss/yaml v1.0.0
 	github.com/google/gofuzz v1.0.0 // indirect
 	github.com/googleapis/gnostic v0.2.0 // indirect
 	github.com/json-iterator/go v1.1.6 // indirect

@@ -3,7 +3,9 @@ package main
 import (
 	"os"
 
+	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 )
 
 const (
@@ -11,12 +13,24 @@ const (
 	envConnectionString = "SERVICEBUS_CONNECTION_STRING"
 	envNamespace = "POD_NAMESPACE"
 	envPodSpecFile = "PODSPEC_FILENAME"
+	envJobLabel = "JOB_APP_LABEL"
 )
 
 func main() {
-	clientset := getClientset()
+	clientset, err := getClientset()
+	if err != nil {
+		log.Errorf("Cannot get clientset: %v", err)
+	}
 
-	manager, err := NewJobManager(clientset)
+	manager, err := NewJobManager(clientset, os.Getenv(envNamespace), os.Getenv(envQueueName), os.Getenv(envConnectionString), os.Getenv(envPodSpecFile), os.Getenv(envJobLabel))
+	if err != nil {
+		log.Errorf("Failed to create manager: %v", err)
+	}
+
+	stopCh := make(chan struct{})
+	manager.Run(stopCh)
+
+	<-stopCh
 }
 
 func getClientset() (*kubernetes.Clientset, error) {
