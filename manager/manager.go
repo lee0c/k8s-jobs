@@ -27,27 +27,26 @@ type JobManager struct {
 	PodSpecFilename		string
 	JobLabel			string
 	QueueManager		*servicebus.QueueManager
-	InformerFactory		informers.SharedInformerFactory
+	JobInformer			cache.SharedIndexInformer
 	JobClient			batch_typed.JobInterface
 }
 
-// NewJobManager comment
+// NewJobManager returns a new jobmanager 
 func NewJobManager(clientset *kubernetes.Clientset, namespace, connectionString, queueName, podSpecFilename, jobLabel string) (*JobManager, error) {
 	// get SBQ QueueManager
 	sbNamespace, err := servicebus.NewNamespace(servicebus.NamespaceWithConnectionString(connectionString))
 	if err != nil {
 		return nil, err
 	}
-
 	queueManager := sbNamespace.NewQueueManager()
 
 	// set up informer
-	informerFactory := createInformerFactory(clientset, namespace, jobLabel)
+	jobInformer := createJobInformer(clientset, namespace, jobLabel)
 
 	// get Job Client
 	jobClient := clientset.BatchV1().Jobs(namespace)
 
-	// return Manager
+	// return Managerk
 	return &JobManager{
 		Namespace: namespace,
 		ConnectionString: connectionString,
@@ -55,12 +54,12 @@ func NewJobManager(clientset *kubernetes.Clientset, namespace, connectionString,
 		PodSpecFilename: podSpecFilename,
 		JobLabel: jobLabel,
 		QueueManager: queueManager,
-		InformerFactory: informerFactory,
+		JobInformer: jobInformer,
 		JobClient: jobClient,
 	}, nil
 }
 
-func createInformerFactory(clientset *kubernetes.Clientset, namespace, jobLabel string) informers.SharedInformerFactory {
+func createJobInformer(clientset *kubernetes.Clientset, namespace, jobLabel string) cache.SharedIndexInformer {
 	sharedInformerFactory := informers.NewSharedInformerFactory(clientset, time.Second * 30)
 	jobInformer := sharedInformerFactory.Batch().V1().Jobs().Informer()
 
@@ -80,12 +79,12 @@ func createInformerFactory(clientset *kubernetes.Clientset, namespace, jobLabel 
 			}
 		},
 	})
-	return sharedInformerFactory
+	return jobInformer
 }
 
 // Run comment
 func (m *JobManager) Run(stopCh <-chan struct{}) {
-	go m.InformerFactory.Start(stopCh)
+	go m.JobInformer.Run(stopCh)
 
 	jobLenCh := make(chan int)
 	queueLenCh := make(chan int)
@@ -105,6 +104,8 @@ func (m *JobManager) Run(stopCh <-chan struct{}) {
 		} else {
 			log.Errorf("Failed to get job count or queue length")
 		}
+
+		time.Sleep(time.Second * 15)
 	}
 }
 
@@ -117,7 +118,7 @@ func (m *JobManager) getQueueLength(resultCh chan<- int) {
 
 	queueLen := int(*queueEntity.CountDetails.ActiveMessageCount)
 	resultCh<- queueLen
-	log.Infof("Returned queue length %d", queueLen)
+	log.Debugf("Returned queue length %d", queueLen)
 	return
 }
 
@@ -135,7 +136,7 @@ func (m *JobManager) getActiveJobCount(resultCh chan<- int) {
 
 	jobLen := len(jobList.Items)
 	resultCh<- jobLen
-	log.Infof("Returned job count %d", jobLen)
+	log.Debugf("Returned job count %d", jobLen)
 	return
 }
 
@@ -195,6 +196,7 @@ func (m *JobManager) createPodSpec() (*v1.PodSpec, error) {
 		return nil, err
 	}
 	podSpec.RestartPolicy = v1.RestartPolicyOnFailure
+	log.Infof("Using podspec %v", podSpec)
 
 	return podSpec, nil
 }

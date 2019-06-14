@@ -22,9 +22,10 @@ func main() {
 		log.Errorf("Cannot get clientset: %v", err)
 	}
 
-	manager, err := NewJobManager(clientset, os.Getenv(envNamespace), os.Getenv(envQueueName), os.Getenv(envConnectionString), os.Getenv(envPodSpecFile), os.Getenv(envJobLabel))
+	manager, err := NewJobManager(clientset, os.Getenv(envNamespace), os.Getenv(envConnectionString), os.Getenv(envQueueName), os.Getenv(envPodSpecFile), os.Getenv(envJobLabel))
 	if err != nil {
 		log.Errorf("Failed to create manager: %v", err)
+		os.Exit(1)
 	}
 
 	stopCh := make(chan struct{})

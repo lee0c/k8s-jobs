@@ -16,6 +16,8 @@ servicebus:
   queueName: queue
   connectionString: ""
 
+jobLabel: lecattar-testrun-0
+
 volume:
   mountPath: "/etc/config"
   podSpecFilename: pod-config.yaml

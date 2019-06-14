@@ -12,6 +12,7 @@ data:
   SERVICEBUS_CONNECTION_STRING: {{ .Values.servicebus.connectionString | quote }}
   POD_NAMESPACE: {{ .Release.Namespace }}
   PODSPEC_FILENAME: "{{ .Values.volume.mountPath }}/{{ .Values.volume.podSpecFilename }}"
+  JOB_APP_LABEL: {{ .Values.jobLabel | quote }}
   
 ---
 apiVersion: v1
